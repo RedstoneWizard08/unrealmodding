@@ -596,11 +596,11 @@ impl ModLoaderApp {
 
     fn darken_background(&mut self, ctx: &egui::Context) {
         let painter = ctx.layer_painter(egui::LayerId::new(
-            egui::Order::PanelResizeLine,
+            egui::Order::Background,
             egui::Id::new("panel_darken"),
         ));
 
-        let screen_rect = ctx.input(|e| e.screen_rect());
+        let screen_rect = ctx.input(|e| e.content_rect());
         painter.rect_filled(screen_rect, 0.0, egui::Color32::from_black_alpha(192));
     }
 
@@ -630,7 +630,7 @@ impl ModLoaderApp {
             let painter =
                 ctx.layer_painter(LayerId::new(Order::Foreground, Id::new("file_drop_target")));
 
-            let screen_rect = ctx.input(|e| e.screen_rect());
+            let screen_rect = ctx.input(|e| e.content_rect());
             painter.rect_filled(screen_rect, 0.0, Color32::from_black_alpha(192));
             painter.text(
                 screen_rect.center(),

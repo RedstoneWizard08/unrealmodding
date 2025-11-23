@@ -1,8 +1,6 @@
 use std::fmt::Display;
 use std::io;
 
-use unreal_pak::error::PakError;
-
 #[derive(Debug)]
 pub struct CppBootstrapperError {
     kind: CppBootstrapperErrorKind,
@@ -11,7 +9,7 @@ pub struct CppBootstrapperError {
 #[derive(Debug)]
 pub enum CppBootstrapperErrorKind {
     Io(io::Error),
-    Pak(PakError),
+    Pak(repak::Error),
     Metadata(unreal_mod_metadata::error::Error),
 }
 
@@ -35,8 +33,8 @@ impl From<io::Error> for CppBootstrapperError {
     }
 }
 
-impl From<PakError> for CppBootstrapperError {
-    fn from(err: PakError) -> Self {
+impl From<repak::Error> for CppBootstrapperError {
+    fn from(err: repak::Error) -> Self {
         CppBootstrapperError {
             kind: CppBootstrapperErrorKind::Pak(err),
         }

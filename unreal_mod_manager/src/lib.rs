@@ -1,5 +1,5 @@
 #![allow(unexpected_cfgs)]
-#![allow(elided_named_lifetimes)]
+#![allow(mismatched_lifetime_syntaxes)]
 #![allow(clippy::needless_lifetimes)]
 #![allow(clippy::zombie_processes)]
 
@@ -13,7 +13,7 @@ use std::sync::{
 use std::thread;
 use std::time::Instant;
 
-use eframe::egui;
+use eframe::egui::{self, FontData};
 use log::error;
 use parking_lot::Mutex;
 
@@ -40,13 +40,13 @@ use mod_config::write_config;
 use mod_processing::dependencies::DependencyGraph;
 use version::GameBuild;
 
+pub use repak;
 pub use unreal_asset;
 #[cfg(feature = "cpp_loader")]
 pub use unreal_cpp_bootstrapper;
 pub use unreal_helpers;
 pub use unreal_mod_integrator;
 pub use unreal_mod_metadata;
-pub use unreal_pak;
 
 #[derive(Debug, Clone)]
 pub(crate) struct FileToProcess {
@@ -227,18 +227,30 @@ where
     eframe::run_native(
         app.window_title.clone().as_str(),
         eframe::NativeOptions {
-            viewport: egui::ViewportBuilder::default().with_icon(egui::IconData {
-                rgba: icon_data_unwrapped.data.to_vec(),
-                width: icon_data_unwrapped.width,
-                height: icon_data_unwrapped.height,
-            }).with_inner_size([660.0, 600.0]),
+            viewport: egui::ViewportBuilder::default()
+                .with_icon(egui::IconData {
+                    rgba: icon_data_unwrapped.data.to_vec(),
+                    width: icon_data_unwrapped.width,
+                    height: icon_data_unwrapped.height,
+                })
+                .with_inner_size([660.0, 600.0]),
             ..eframe::NativeOptions::default()
         },
         Box::new(|cc| {
             let mut fonts = egui::FontDefinitions::default();
-            fonts.font_data.iter_mut().for_each(|font| {
-                font.1.tweak.scale = 1.15;
-            });
+
+            fonts.font_data = fonts
+                .font_data
+                .into_iter()
+                .map(|(name, font)| {
+                    let mut font = FontData::clone(&font);
+
+                    font.tweak.scale = 1.15;
+
+                    (name, Arc::new(font))
+                })
+                .collect();
+
             cc.egui_ctx.set_fonts(fonts);
 
             cc.egui_ctx.set_style(egui::Style::default());

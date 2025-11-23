@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 
 use error::IntegrationError;
 use log::debug;
+use repak::Version;
 use serde_json::Value;
 
 use unreal_asset::engine_version::EngineVersion;
@@ -22,13 +23,13 @@ use unreal_asset::{
     Asset,
 };
 use unreal_mod_metadata::{Metadata, SyncMode};
-use unreal_pak::{pakversion::PakVersion, PakMemory, PakReader};
 
 mod assets;
 pub mod error;
 mod handlers;
 pub mod helpers;
 pub mod macros;
+pub mod wrappers;
 
 use assets::{COPY_OVER, INTEGRATOR_STATICS_ASSET, LIST_OF_MODS_ASSET, METADATA_JSON};
 #[cfg(not(feature = "no_bulk_data"))]
@@ -37,6 +38,7 @@ use assets::{INTEGRATOR_STATICS_BULK, LIST_OF_MODS_BULK};
 pub use crate::error::Error;
 use crate::handlers::handle_persistent_actors;
 use crate::helpers::write_asset;
+use crate::wrappers::{PakMemory, WPakReader};
 
 pub trait IntegratorInfo {}
 
@@ -149,16 +151,16 @@ pub trait DynamicMod<E: std::error::Error>: IntegratorModInfo {
     fn integrate(
         &self,
         integrated_pak: &mut PakMemory,
-        game_paks: &mut Vec<PakReader<BufReader<File>>>,
-        mod_paks: &mut Vec<PakReader<BufReader<File>>>,
+        game_paks: &mut Vec<WPakReader<BufReader<File>>>,
+        mod_paks: &mut Vec<WPakReader<BufReader<File>>>,
     ) -> Result<(), E>;
 }
 
 pub type HandlerFn<D, E> = dyn FnMut(
     &D,
     &mut PakMemory,
-    &mut Vec<PakReader<BufReader<File>>>,
-    &mut Vec<PakReader<BufReader<File>>>,
+    &mut Vec<WPakReader<BufReader<File>>>,
+    &mut Vec<WPakReader<BufReader<File>>>,
     &Vec<Value>,
 ) -> Result<(), E>;
 
@@ -412,10 +414,8 @@ pub fn integrate_mods<
     let mut optional_mods_data = HashMap::new();
 
     for mod_file in mod_files {
-        let mut pak = PakReader::new(BufReader::new(mod_file));
-        pak.load_index()?;
-
-        let record = pak.read_entry(&String::from("metadata.json"))?;
+        let mut pak = WPakReader::new(BufReader::new(mod_file))?;
+        let record = pak.get("metadata.json")?;
         let metadata = unreal_mod_metadata::from_slice(&record)?;
         read_mods.push(metadata.clone());
 
@@ -435,7 +435,11 @@ pub fn integrate_mods<
     }
 
     if !mods.is_empty() {
-        let mut generated_pak = PakMemory::new(PakVersion::FnameBasedCompressionMethod);
+        #[cfg(not(feature = "ue4_27"))]
+        let mut generated_pak = PakMemory::new(Version::V8);
+
+        #[cfg(feature = "ue4_27")]
+        let mut generated_pak = PakMemory::new(Version::V11);
 
         #[cfg(not(feature = "no_bulk_data"))]
         let list_of_mods_bulk = Some(LIST_OF_MODS_BULK);
@@ -488,9 +492,9 @@ pub fn integrate_mods<
         }
 
         let mut game_paks = Vec::new();
+
         for game_file in game_files {
-            let mut pak = PakReader::new(BufReader::new(game_file));
-            pak.load_index()?;
+            let pak = WPakReader::new(BufReader::new(game_file))?;
             game_paks.push(pak);
         }
 

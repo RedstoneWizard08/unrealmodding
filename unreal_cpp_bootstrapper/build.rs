@@ -14,6 +14,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-env-changed=USE_PRECOMPILED_CPP_LOADER");
 
+    // FIXME: REMOVE THIS BEFORE COMMIT!
+    env::set_var("USE_PRECOMPILED_CPP_LOADER", "1");
+
     let use_prebuilt = env::var_os("USE_PRECOMPILED_CPP_LOADER")
         .map(|e| e == "1")
         .unwrap_or(false);

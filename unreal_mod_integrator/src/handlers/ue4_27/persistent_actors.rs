@@ -43,7 +43,7 @@ pub fn handle_persistent_actors(
     let level_asset = Asset::new(
         Cursor::new(LEVEL_TEMPLATE_ASSET),
         None,
-        EngineVersion::VER_UE4_23,
+        EngineVersion::VER_UE4_27,
         None,
     )
     .map_err(|e| io::Error::new(ErrorKind::Other, e.to_string()))?;
@@ -83,7 +83,7 @@ pub fn handle_persistent_actors(
             game_paks,
             mod_paks,
             &map_path.to_string(),
-            EngineVersion::VER_UE4_23,
+            EngineVersion::VER_UE4_27,
         )?;
 
         let mut level_export_index = None;
@@ -152,7 +152,7 @@ pub fn handle_persistent_actors(
                 game_paks,
                 mod_paks,
                 &actor_asset_path,
-                EngineVersion::VER_UE4_23,
+                EngineVersion::VER_UE4_27,
             )?;
 
             let mut scs_location = None;

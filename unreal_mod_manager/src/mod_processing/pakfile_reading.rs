@@ -3,8 +3,8 @@ use std::fs;
 
 use log::{debug, warn};
 use semver::Version;
+use unreal_mod_integrator::wrappers::WPakReader;
 use unreal_mod_metadata::{self, Metadata};
-use unreal_pak::{error::PakErrorKind, PakReader};
 
 use crate::error::ModLoaderWarning;
 use crate::game_mod::{GameMod, GameModVersion};
@@ -29,15 +29,13 @@ pub(crate) fn read_pak_files(
 
             let file = fs::File::open(file_path)
                 .map_err(|err| ModLoaderWarning::from(err).with_mod_id(file_name.clone()))?;
-            let mut pak = PakReader::new(&file);
-
-            pak.load_index()
+            let mut pak = WPakReader::new(&file)
                 .map_err(|err| ModLoaderWarning::from(err).with_mod_id(file_name.clone()))?;
 
             let record = pak
-                .read_entry(&String::from("metadata.json"))
+                .get(&"metadata.json")
                 .map_err(|err| {
-                    if matches!(err.kind, PakErrorKind::EntryNotFound(_)) {
+                    if matches!(err, repak::Error::MissingEntry(_)) {
                         ModLoaderWarning::missing_metadata(file_name.clone())
                     } else {
                         ModLoaderWarning::from(err).with_mod_id(file_name.clone())

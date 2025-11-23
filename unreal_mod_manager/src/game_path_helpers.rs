@@ -39,8 +39,9 @@ pub fn determine_installed_mods_path_steam(game_name: &str) -> Option<PathBuf> {
 
 pub fn determine_prefix_path_proton(app_id: u32) -> Option<PathBuf> {
     Some(
-        SteamDir::locate()?
-            .path
+        SteamDir::locate()
+            .ok()?
+            .path()
             .join("steamapps")
             .join("compatdata")
             .join(app_id.to_string())
@@ -71,7 +72,6 @@ pub fn determine_installed_mods_path_proton(game_name: &str, app_id: u32) -> Opt
 pub fn determine_game_package_path_winstore(store_info: &MsStoreInfo) -> Option<PathBuf> {
     let base_dirs = BaseDirs::new();
     let Some(base_dirs) = base_dirs else {
-
         warn!("Could not determine base directory");
         return None;
     };
@@ -108,9 +108,9 @@ pub fn determine_installed_mods_path_winstore(
 }
 
 pub fn determine_install_path_steam(app_id: u32) -> Result<PathBuf, ModLoaderWarning> {
-    if let Some(mut steam_dir) = SteamDir::locate() {
-        match steam_dir.app(&app_id) {
-            Some(app) => Ok(app.path.clone()),
+    if let Ok(steam_dir) = SteamDir::locate() {
+        match steam_dir.find_app(app_id).ok().flatten() {
+            Some((app, lib)) => Ok(lib.resolve_app_dir(&app).clone()),
             None => Err(ModLoaderWarning::steam_error()),
         }
     } else {

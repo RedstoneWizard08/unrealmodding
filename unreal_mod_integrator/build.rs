@@ -11,10 +11,13 @@ fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-env-changed=USE_PREBUILT_ASSETS");
 
+    // FIXME: REMOVE BEFORE COMMITTING!
+    env::set_var("USE_PREBUILT_ASSETS", "1");
+
     #[cfg(feature = "no_bulk_data")]
     compile_error!("no_bulk_data feature is not supported yet.");
 
-    #[cfg(not(any(feature = "ue4_23", feature = "ue4_24", feature = "ue4_25")))]
+    #[cfg(not(any(feature = "ue4_23", feature = "ue4_24", feature = "ue4_25", feature = "ue4_27")))]
     compile_error!("No UE version feature enabled.");
 
     let out_dir = PathBuf::from(&env::var_os("OUT_DIR").expect("Failed to read OUT_DIR"));

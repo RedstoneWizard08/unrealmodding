@@ -3,7 +3,6 @@ use std::fmt;
 use std::io;
 
 use reqwest::StatusCode;
-use unreal_pak::error::PakError;
 
 /// For critical errors that can happen during runtime which prevent further
 /// operation of the modloader and cannot be handled gracefully.
@@ -16,7 +15,7 @@ pub struct ModLoaderError {
 pub enum ModLoaderErrorKind {
     IoError(io::Error),
     IoErrorWithMessage(io::Error, String),
-    PakError(PakError),
+    PakError(repak::Error),
     NoBasePath,
     Generic(Box<dyn std::error::Error + Send>),
     Other(Box<str>),
@@ -68,8 +67,8 @@ impl From<io::Error> for ModLoaderError {
     }
 }
 
-impl From<PakError> for ModLoaderError {
-    fn from(err: PakError) -> Self {
+impl From<repak::Error> for ModLoaderError {
+    fn from(err: repak::Error) -> Self {
         ModLoaderError {
             kind: ModLoaderErrorKind::PakError(err),
         }
@@ -94,7 +93,7 @@ pub struct ModLoaderWarning {
 pub enum ModLoaderWarningKind {
     IoError(io::Error),
     IoErrorWithMessage(io::Error, String),
-    UnrealPakError(PakError),
+    UnrealPakError(repak::Error),
     IntegratorError(unreal_mod_integrator::error::Error),
 
     UnresolvedDependency(String, Vec<(String, String)>),
@@ -320,8 +319,8 @@ impl From<io::Error> for ModLoaderWarning {
     }
 }
 
-impl From<PakError> for ModLoaderWarning {
-    fn from(err: PakError) -> Self {
+impl From<repak::Error> for ModLoaderWarning {
+    fn from(err: repak::Error) -> Self {
         ModLoaderWarning {
             kind: ModLoaderWarningKind::UnrealPakError(err),
             mod_id: None,

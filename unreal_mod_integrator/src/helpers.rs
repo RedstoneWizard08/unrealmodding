@@ -3,14 +3,14 @@ use std::io::{BufReader, Cursor};
 use std::path::Path;
 
 use unreal_asset::{engine_version::EngineVersion, reader::ArchiveTrait, Asset};
-use unreal_pak::{PakMemory, PakReader};
 
+use crate::wrappers::{PakMemory, WPakReader};
 use crate::{error::IntegrationError, Error};
 
 pub fn get_asset(
     integrated_pak: &PakMemory,
-    game_paks: &mut [PakReader<BufReader<File>>],
-    mod_paks: &mut [PakReader<BufReader<File>>],
+    game_paks: &mut [WPakReader<BufReader<File>>],
+    mod_paks: &mut [WPakReader<BufReader<File>>],
     name: &String,
     version: EngineVersion,
 ) -> Result<Asset<Cursor<Vec<u8>>>, Error> {
@@ -25,9 +25,9 @@ pub fn get_asset(
     if let Some(mod_pak_index) = find_asset(mod_paks, name) {
         return read_asset(
             |name| {
-                mod_paks[mod_pak_index].read_entry(name).map_or_else(
+                mod_paks[mod_pak_index].get(name).map_or_else(
                     |err| {
-                        if matches!(err.kind, unreal_pak::error::PakErrorKind::EntryNotFound(_)) {
+                        if matches!(err, repak::Error::MissingEntry(_)) {
                             Ok(None)
                         } else {
                             Err(err.into())
@@ -46,9 +46,9 @@ pub fn get_asset(
 
     read_asset(
         |name| {
-            game_paks[game_pak_index].read_entry(name).map_or_else(
+            game_paks[game_pak_index].get(name).map_or_else(
                 |err| {
-                    if matches!(err.kind, unreal_pak::error::PakErrorKind::EntryNotFound(_)) {
+                    if matches!(err, repak::Error::MissingEntry(_)) {
                         Ok(None)
                     } else {
                         Err(err.into())
@@ -62,9 +62,9 @@ pub fn get_asset(
     )
 }
 
-pub fn find_asset(paks: &[PakReader<BufReader<File>>], name: &String) -> Option<usize> {
+pub fn find_asset(paks: &[WPakReader<BufReader<File>>], name: &String) -> Option<usize> {
     for (i, pak) in paks.iter().enumerate() {
-        if pak.contains_entry(name) {
+        if pak.files().contains(name) {
             return Some(i);
         }
     }

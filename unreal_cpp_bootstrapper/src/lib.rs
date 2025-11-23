@@ -4,7 +4,7 @@ use std::io::Write;
 use std::path::PathBuf;
 
 use error::CppBootstrapperError;
-use unreal_pak::PakReader;
+use repak::PakBuilder;
 
 pub mod config;
 pub mod error;
@@ -37,11 +37,11 @@ pub fn bootstrap(
     let paths = fs::read_dir(path)?;
 
     for path in paths.filter_map(|e| e.ok()) {
-        let file = File::open(path.path())?;
-        let mut pak = PakReader::new(&file);
-        pak.load_index()?;
+        let mut file = File::open(path.path())?;
+        let pak = PakBuilder::new().reader(&mut file)?;
+        let mut metadata_entry = Vec::new();
 
-        let Ok(metadata_entry) = pak.read_entry(&String::from("metadata.json")) else {
+        let Ok(_) = pak.read_file("metadata.json", &mut file, &mut metadata_entry) else {
             continue;
         };
 
@@ -53,7 +53,9 @@ pub fn bootstrap(
             .filter_map(|e| unreal_helpers::game_to_absolute(game_name, e))
         {
             let dll_path = PathBuf::from(&dll);
-            let dll_data = pak.read_entry(&dll)?;
+            let mut dll_data = Vec::new();
+
+            pak.read_file(&dll, &mut file, &mut dll_data)?;
 
             let path = extract_path.join(dll_path.file_name().unwrap().to_str().unwrap());
 

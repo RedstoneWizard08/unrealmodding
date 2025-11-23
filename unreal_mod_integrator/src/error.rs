@@ -35,7 +35,7 @@ impl Display for IntegrationError {
 pub enum ErrorCode {
     Io(io::Error),
     Uasset(unreal_asset::error::Error),
-    Pak(unreal_pak::error::PakError),
+    Pak(repak::Error),
     UnrealModMetaData(unreal_mod_metadata::error::Error),
     Json(serde_json::Error),
     Integration(IntegrationError),
@@ -93,8 +93,8 @@ impl From<unreal_asset::error::Error> for Error {
     }
 }
 
-impl From<unreal_pak::error::PakError> for Error {
-    fn from(e: unreal_pak::error::PakError) -> Self {
+impl From<repak::Error> for Error {
+    fn from(e: repak::Error) -> Self {
         Error {
             code: ErrorCode::Pak(e),
         }
